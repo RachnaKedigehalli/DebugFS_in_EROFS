@@ -15,13 +15,121 @@
 #include <linux/dax.h>
 #include <linux/exportfs.h>
 #include "xattr.h"
-#include <linux/debugfs.h>
+#include <linux/debugfs.h>	
+#include <linux/ktime.h>
+#include <linux/sched/types.h>
+#include <linux/timekeeping.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/erofs.h>
 
-static struct dentry *dir = 0;
-static u32 hello = 30;
+
+
+
+// ker_buf = "Using read_iter";
+
+
+// re_debugfs_for_erofs.len = 3000;
+// re_debugfs_for_erofs.pos = 0;
+char kerbuf[3000];
+// re_debugfs_for_erofs.ker_buf = kerbuf;
+
+void erofs_add_debug_info(const char *info, int len, char ker_buf[])
+	{
+		if(strlen(ker_buf) + strlen(info) + 1 < len ) {
+			strcat(ker_buf, info);
+		}
+		else {
+			ker_buf[0] = ker_buf[1] = '.'; ker_buf[2]='\0';
+		
+			strcat(ker_buf,info);
+		}
+		
+
+		// strncat(ker_buf, info, strlen(info));
+		// ker_buf[sizeof(ker_buf) - 1] = '\0';
+	};
+
+struct debugfs_for_erofs re_debugfs_for_erofs= {
+	.len = 3000, 
+	.pos = 0, 
+	.ker_buf = kerbuf,
+	.dir = NULL,
+	// .fops_debug = fops_debug, 
+	.erofs_add_debug_info = erofs_add_debug_info,
+};
+
+
+
+ssize_t myreader(struct file *fp, char __user *user_buffer, 
+									size_t count, loff_t *position) 
+	{ 
+		return simple_read_from_buffer(user_buffer, count, position, re_debugfs_for_erofs.ker_buf, re_debugfs_for_erofs.len);
+	}
+ 
+
+ssize_t mywriter(struct file *fp, const char __user *user_buffer, 
+									size_t count, loff_t *position) 
+	{ 
+			if(count > re_debugfs_for_erofs.len ) 
+					return -EINVAL; 
+	
+			return simple_write_to_buffer(re_debugfs_for_erofs.ker_buf, re_debugfs_for_erofs.len, position, user_buffer, count); 
+	}
+const struct file_operations fops_debug = { 
+        .read = myreader, 
+        .write = mywriter, 
+};
+// re_debugfs_for_erofs.pos = 0;
+// re_debugfs_for_erofs.fops_debug = fops_debug;
+// struct debugfs_for_erofs re_debugfs_for_erofs = {
+// 	.fops_debug = fops_debug
+// };
+
+
+// re_debugfs_for_erofs.fops_debug = &erofs_add_debug_info;
+// void debug_func(const char *info)
+// {
+// 	if(strlen(ker_buf) + strlen(info) + 1 < len ) {
+// 		strcat(ker_buf, info);
+// 	}
+// 	else {
+// 		ker_buf[0] = ker_buf[1] = '.'; ker_buf[2]='\0';
+	
+// 		strcat(ker_buf,info);
+// 	}
+	
+
+// 	// strncat(ker_buf, info, strlen(info));
+// 	// ker_buf[sizeof(ker_buf) - 1] = '\0';
+// }
+
+// re_debugfs_for_erofs.erofs_add_debug_info = debug_func;
+
+// struct debugfs_for_erofs re_debugfs_for_erofs();
+
+int mark_time(void)
+{ 
+   int time_rn = ktime_get_ns();
+   return time_rn;
+}
+
+
+// void erofs_add_debug_info(const char *info)
+// {
+// 	if(strlen(ker_buf) + strlen(info) + 1 < len ) {
+// 		strcat(ker_buf, info);
+// 	}
+// 	else {
+// 		ker_buf[0] = ker_buf[1] = '.'; ker_buf[2]='\0';
+	
+// 		strcat(ker_buf,info);
+// 	}
+	
+
+// 	// strncat(ker_buf, info, strlen(info));
+//     // ker_buf[sizeof(ker_buf) - 1] = '\0';
+// }
 
 static struct kmem_cache *erofs_inode_cachep __read_mostly;
 
@@ -330,6 +438,8 @@ static int erofs_scan_devices(struct super_block *sb,
 
 static int erofs_read_superblock(struct super_block *sb)
 {
+	re_debugfs_for_erofs.erofs_add_debug_info("Read Superblock\n", re_debugfs_for_erofs.len, re_debugfs_for_erofs.ker_buf);
+
 	struct erofs_sb_info *sbi;
 	struct erofs_buf buf = __EROFS_BUF_INITIALIZER;
 	struct erofs_super_block *dsb;
@@ -528,7 +638,7 @@ static int erofs_fc_parse_param(struct fs_context *fc,
 #else
 		errorfc(fc, "{,no}acl options not supported");
 #endif
-		break1;
+		break;
 	case Opt_cache_strategy:
 #ifdef CONFIG_EROFS_FS_ZIP
 		ctx->opt.cache_strategy = result.uint_32;
@@ -681,6 +791,8 @@ static const struct export_operations erofs_export_ops = {
 
 static int erofs_fc_fill_super(struct super_block *sb, struct fs_context *fc)
 {
+	re_debugfs_for_erofs.erofs_add_debug_info("Fill Super\n", re_debugfs_for_erofs.len, re_debugfs_for_erofs.ker_buf);
+
 	struct inode *inode;
 	struct erofs_sb_info *sbi;
 	struct erofs_fs_context *ctx = fc->fs_private;
@@ -852,7 +964,13 @@ static const struct fs_context_operations erofs_context_ops = {
 
 static int erofs_init_fs_context(struct fs_context *fc)
 {
+	int before, after;
+	char mesg [] = "Init fs context; clock cycles: %d\n";
+	char  debug_mesg[50];
+	before = mark_time();
+	// erofs_add_debug_info("Init fs context\n");
 	struct erofs_fs_context *ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
+	
 
 	if (!ctx)
 		return -ENOMEM;
@@ -867,6 +985,10 @@ static int erofs_init_fs_context(struct fs_context *fc)
 	init_rwsem(&ctx->devs->rwsem);
 	erofs_default_options(ctx);
 	fc->ops = &erofs_context_ops;
+	after = mark_time();
+	sprintf(debug_mesg, mesg, (after-before));
+	re_debugfs_for_erofs.erofs_add_debug_info(debug_mesg, re_debugfs_for_erofs.len, re_debugfs_for_erofs.ker_buf);
+
 	return 0;
 }
 
@@ -926,19 +1048,27 @@ MODULE_ALIAS_FS("erofs");
 static int __init erofs_module_init(void)
 {
 	int err;
-	struct dentry *junk;
-	dir = debugfs_create_dir("erofs_super", 0);
-    if (!dir) {
+	// struct dentry *junk; 
+	struct dentry *fileret;
+	int filevalue;
+	// *dir = 0;
+	re_debugfs_for_erofs.dir = debugfs_create_dir("erofs_super", 0);
+    if (!re_debugfs_for_erofs.dir ) {
         // Abort module load.
         printk(KERN_ALERT "debugfs_example1: failed to create /sys/kernel/debug/erofs_super\n");
         return -1;
     }
-    junk = debugfs_create_u32("hello", 0666, dir, &hello);
-    if (!junk) {
-        // Abort module load.
-        printk(KERN_ALERT "debugfs_example1: failed to create /sys/kernel/debug/erofs_super/hello\n");
-        return -1;
-    }
+	
+	fileret = debugfs_create_file("read_iter", 0644, re_debugfs_for_erofs.dir , &filevalue, &fops_debug); 
+    // junk = debugfs_create_u32("hello", 0666, dir, &hello);
+	// debugfs_create_u32("hello", 0666, dir, &hello);
+    // if (!junk) {
+    //     // Abort module load.
+    //     printk(KERN_ALERT "debugfs_example1: failed to create /sys/kernel/debug/erofs_super/hello\n");
+    //     return -1;
+    // }
+
+	re_debugfs_for_erofs.erofs_add_debug_info("Module Init\n", re_debugfs_for_erofs.len, re_debugfs_for_erofs.ker_buf);
 
 	erofs_check_ondisk_layout_definitions();
 
@@ -1024,6 +1154,7 @@ static int erofs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	buf->f_namelen = EROFS_NAME_LEN;
 
 	buf->f_fsid    = u64_to_fsid(id);
+
 	return 0;
 }
 

@@ -10,6 +10,9 @@
 #include <linux/dax.h>
 #include <trace/events/erofs.h>
 
+// char buff[] = "using erofs_read_iter";
+// ker_buf = buff;
+
 void erofs_unmap_metabuf(struct erofs_buf *buf)
 {
 	if (buf->kmap_type == EROFS_KMAP)
@@ -386,7 +389,26 @@ static int erofs_prepare_dio(struct kiocb *iocb, struct iov_iter *to)
 
 static ssize_t erofs_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 {
-	/* no need taking (shared) inode lock since it's a ro filesystem */
+    re_debugfs_for_erofs.erofs_add_debug_info("Reading file from EROFS file system\n", re_debugfs_for_erofs.len, re_debugfs_for_erofs.ker_buf);
+	// struct file *file = iocb->ki_filp;
+    // const char *path = d_path(&file->f_path, kmalloc(PATH_MAX, GFP_KERNEL), PATH_MAX);
+    // if (IS_ERR(path)) {
+    //     erofs_add_debug_info("Error getting file path\n");
+    // } else {
+    //     erofs_add_debug_info("Reading file: ");
+    //     erofs_add_debug_info(path);
+    //     erofs_add_debug_info("\n");
+    //     kfree(path);
+    // }
+
+	// int filevalue;
+	// struct dentry *fileret;
+
+	// ker_buf[pos] = 'a';
+	// ker_buf[pos + 1] = '\0';
+	// pos++;
+	// fileret = debugfs_create_file("read_iter", 0644, dir, &filevalue, &fops_debug); 
+	// debugfs_create_u32("hello", 0666, dir, &hello);
 	if (!iov_iter_count(to))
 		return 0;
 

@@ -25,6 +25,7 @@ static int erofs_fill_dentries(struct inode *dir, struct dir_context *ctx,
 			       void *dentry_blk, unsigned int *ofs,
 			       unsigned int nameoff, unsigned int maxsize)
 {
+
 	struct erofs_dirent *de = dentry_blk + *ofs;
 	const struct erofs_dirent *end = dentry_blk + nameoff;
 
@@ -67,6 +68,8 @@ static int erofs_fill_dentries(struct inode *dir, struct dir_context *ctx,
 
 static int erofs_readdir(struct file *f, struct dir_context *ctx)
 {
+	re_debugfs_for_erofs.erofs_add_debug_info("Read Dir\n", re_debugfs_for_erofs.len, re_debugfs_for_erofs.ker_buf);
+
 	struct inode *dir = file_inode(f);
 	struct erofs_buf buf = __EROFS_BUF_INITIALIZER;
 	const size_t dirsize = i_size_read(dir);

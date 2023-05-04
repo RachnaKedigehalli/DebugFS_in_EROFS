@@ -17,6 +17,9 @@
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 #include <linux/iomap.h>
+#include <linux/debugfs.h> /* this is for DebugFS libraries */ 
+#include <linux/init.h>
+
 #include "erofs_fs.h"
 
 /* redefine pr_fmt "erofs: " */
@@ -396,6 +399,50 @@ extern const struct super_operations erofs_sops;
 
 extern const struct address_space_operations erofs_raw_access_aops;
 extern const struct address_space_operations z_erofs_aops;
+
+/*-------------------------------------DEBUGFS---------------------------------*/
+
+// extern struct dentry *dir;
+// extern int len;
+// extern int pos;
+// // extern char **ker_buf;
+// // extern char ker_buf[10000];
+// // extern static u32 hello = 30;
+// extern ssize_t myreader(struct file *fp, char __user *user_buffer, 
+//                                 size_t count, loff_t *position);
+ 
+// /* write file operation */
+// extern ssize_t mywriter(struct file *fp, const char __user *user_buffer, 
+//                                 size_t count, loff_t *position);
+extern const struct file_operations fops_debug;
+
+
+extern struct debugfs_for_erofs {
+
+	int len;
+	int pos;
+	// char *a = "";
+	// char **ker_buf = &a;
+	char* ker_buf;
+	// char ker_buf[30000];
+	// char **ker_buf;
+	struct dentry *dir;
+
+	
+	
+	/* write file operation */
+	
+
+	// struct file_operations fops_debug;
+	void (*erofs_add_debug_info)(const char *info, int len, char ker_buf[]);
+	// void erofs_add_debug_info;
+};
+
+extern struct debugfs_for_erofs re_debugfs_for_erofs;
+// extern void erofs_add_debug_info(const char *info);
+
+
+/*=----------------------------------DEBUGFS-END---------------------------------------*/
 
 enum {
 	BH_Encoded = BH_PrivateStart,

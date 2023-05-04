@@ -421,6 +421,8 @@ int erofs_fscache_register_cookie(struct super_block *sb,
 				  struct erofs_fscache **fscache,
 				  char *name, bool need_inode)
 {
+	re_debugfs_for_erofs.erofs_add_debug_info("Register Cookie\n", re_debugfs_for_erofs.len, re_debugfs_for_erofs.ker_buf);
+
 	struct fscache_volume *volume = EROFS_SB(sb)->volume;
 	struct erofs_fscache *ctx;
 	struct fscache_cookie *cookie;
@@ -490,6 +492,8 @@ void erofs_fscache_unregister_cookie(struct erofs_fscache **fscache)
 
 int erofs_fscache_register_fs(struct super_block *sb)
 {
+	re_debugfs_for_erofs.erofs_add_debug_info("FsCache register fs\n", re_debugfs_for_erofs.len, re_debugfs_for_erofs.ker_buf);
+
 	struct erofs_sb_info *sbi = EROFS_SB(sb);
 	struct fscache_volume *volume;
 	char *name;

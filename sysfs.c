@@ -200,6 +200,8 @@ static struct kobject erofs_feat = {
 
 int erofs_register_sysfs(struct super_block *sb)
 {
+	re_debugfs_for_erofs.erofs_add_debug_info("Register Sysfs\n", re_debugfs_for_erofs.len, re_debugfs_for_erofs.ker_buf);
+
 	struct erofs_sb_info *sbi = EROFS_SB(sb);
 	int err;
 
@@ -230,6 +232,8 @@ void erofs_unregister_sysfs(struct super_block *sb)
 
 int __init erofs_init_sysfs(void)
 {
+	re_debugfs_for_erofs.erofs_add_debug_info("Init Sysfs\n", re_debugfs_for_erofs.len, re_debugfs_for_erofs.ker_buf);
+
 	int ret;
 
 	kobject_set_name(&erofs_root.kobj, "erofs");

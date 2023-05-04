@@ -29,6 +29,9 @@ static void *erofs_read_inode(struct erofs_buf *buf,
 	erofs_dbg("%s, reading inode nid %llu at %u of blkaddr %u",
 		  __func__, vi->nid, *ofs, blkaddr);
 
+	re_debugfs_for_erofs.erofs_add_debug_info("Reading inode\n", re_debugfs_for_erofs.len, re_debugfs_for_erofs.ker_buf);
+
+
 	kaddr = erofs_read_metabuf(buf, sb, blkaddr, EROFS_KMAP);
 	if (IS_ERR(kaddr)) {
 		erofs_err(sb, "failed to get inode (nid: %llu) page, err %ld",
@@ -249,6 +252,8 @@ static int erofs_fill_inode(struct inode *inode, int isdir)
 	unsigned int ofs;
 	int err = 0;
 
+	re_debugfs_for_erofs.erofs_add_debug_info("Fill Inode\n", re_debugfs_for_erofs.len, re_debugfs_for_erofs.ker_buf);
+
 	trace_erofs_fill_inode(inode, isdir);
 
 	/* read inode base data from disk */
@@ -337,6 +342,8 @@ struct inode *erofs_iget(struct super_block *sb,
 			 erofs_nid_t nid,
 			 bool isdir)
 {
+	re_debugfs_for_erofs.erofs_add_debug_info("Iget\n", re_debugfs_for_erofs.len, re_debugfs_for_erofs.ker_buf);
+
 	struct inode *inode = erofs_iget_locked(sb, nid);
 
 	if (!inode)
